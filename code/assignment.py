@@ -67,7 +67,7 @@ def test(model, test_inputs, test_labels):
         logits = model(batch_x, is_testing=True)
         accuracies.append(model.accuracy(logits, batch_y))
         predicates.append(tf.argmax(logits, axis=1))
-    return tf.reduce_mean(accs), tf.concat(all_preds, axis=0)
+    return tf.reduce_mean(accuracies), tf.concat(predicates, axis=0)
 
 def visualize_loss(losses):
     """
@@ -165,7 +165,7 @@ def main():
 
 
     # Initialize your model and optimizer
-    model = MLP(classes)
+    model = CNN(classes)
     optimizer = tf.keras.optimizers.Adam(learning_rate=1e-3)
 
     # Train your model
@@ -181,7 +181,7 @@ def main():
     #   depending on which model you are using
     # You will submit these prediction files to the autograder with predictions
     #    For the CAT, DEER, and DOG classes
-    np.save("predictions_mlp.npy", test_preds.numpy())
+    np.save("predictions_cnn.npy", test_preds.numpy())
     return
 
 

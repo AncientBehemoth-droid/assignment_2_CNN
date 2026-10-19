@@ -52,6 +52,14 @@ class CNN(CifarModel):
         self.dropout = tf.keras.layers.Dropout(0.3)
         self.dense2 = tf.keras.layers.Dense(self.num_classes)
 
+        self.manual_conv = ManualConv2d(
+            filter_shape=[3, 3, 3, 32],
+            strides=[1, 1, 1, 1],
+            padding="SAME",
+            use_bias=True,
+            trainable=False          # <-- important: prevents the gradient warning
+        )
+
     def call(self, inputs, is_testing=False):
         """
         Runs a forward pass on an input batch of images.
@@ -59,7 +67,11 @@ class CNN(CifarModel):
         :param is_testing: a boolean that should be set to True only when you're doing Part 2 of the assignment and this function is being called during testing
         :return: logits - a matrix of shape (num_inputs, num_classes); during training, it would be (batch_size, num_classes)
         """
-        x = self.conv1(inputs)
+        if is_testing:
+            self.manual_conv.set_weights(self.conv1.kernel, self.conv1.bias)
+            x = self.manual_conv(inputs)
+        else:
+            x = self.conv1(inputs)
         x = self.bn1(x, training=not is_testing)
         x = tf.nn.relu(x)
         x = self.pool1(x)
@@ -78,3 +90,5 @@ class CNN(CifarModel):
         if not is_testing:
             x = self.dropout(x)
         return self.dense2(x)
+
+            
