@@ -45,4 +45,33 @@ class ManualConv2d(tf.keras.layers.Layer):
         num_examples, in_height, in_width, input_in_channels = inputs.shape
         filter_height, filter_width, filter_in_channels, filter_out_channels = self.filters.shape
 
-        # fill out the rest!
+        assert input_in_channels == filter_in_channels, "in_channels mismatch"
+
+        # Padding if applicable
+        if self.padding == "SAME":
+            pad_h = filter_height - 1
+            pad_w = filter_width - 1
+            pad_top = pad_h // 2
+            pad_bottom = pad_h - pad_top
+            pad_left = pad_w // 2
+            pad_right = pad_w - pad_left
+            inputs = tf.pad(inputs, [[0,0], [pad_top, pad_bottom], [pad_left, pad_right], [0,0]])
+
+        # Spatial size 
+        out_h = inputs.shape[1] - filter_height + 1
+        out_w = inputs.shape[2] - filter_width + 1
+
+        # Manual convolution 
+        patches = tf.image.extract_patches(
+            images=inputs,
+            sizes=[1, filter_height, filter_width, 1],
+            strides=[1, 1, 1, 1],
+            rates=[1, 1, 1, 1],
+            padding='VALID'
+        )
+        # Patches
+        filters_flat = tf.reshape(self.filters, [-1, filter_out_channels])
+        out = tf.matmul(patches, filters_flat)
+        if self.bias is not None:
+            out = out + self.bias
+        return tf.convert_to_tensor(out, dtype=tf.float32)

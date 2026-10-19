@@ -15,8 +15,7 @@ class CifarModel(tf.keras.Model):
 		:param labels: during training, matrix of shape (batch_size, self.num_classes) containing the train labels
 		:return: the loss of the model as a Tensor
 		"""
-		# TODO: Implement the loss function
-		raise NotImplementedError("Method not implemented")
+		return tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=labels, logits=logits))
 	
 	def accuracy(self, logits, labels):
 		"""
@@ -27,5 +26,6 @@ class CifarModel(tf.keras.Model):
 		:param labels: matrix of size (num_labels, self.num_classes) containing the answers, during training, this will be (batch_size, self.num_classes)
 		:return: the accuracy of the model as a Tensor
 		"""
-		# TODO: Implement the accuracy function
-		raise NotImplementedError("Method not implemented")
+		preds = tf.argmax(logits, axis=1)
+		true = tf.argmax(labels, axis=1)
+		return tf.reduce_mean(tf.cast(tf.equal(preds, true), tf.float32))

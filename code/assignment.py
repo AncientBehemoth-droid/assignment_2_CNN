@@ -28,8 +28,21 @@ def train(model, optimizer, train_inputs, train_labels):
     shape (num_labels, num_classes)
     :return: None
     '''
-    #TODO: Implement the training loop
-    raise NotImplementedError
+    n = train_inputs.shape[0]
+    indices = tf.random.shuffle(tf.range(n))
+    train_inputs = tf.gather(train_inputs, indices)
+    train_labels = tf.gather(train_labels, indices)
+
+    num_batches = n // model.batch_size
+    for i in range(num_batches):
+        batch_x, batch_y = get_next_batch(i, train_inputs, train_labels, model.batch_size)
+        batch_x = tf.image.random_flip_left_right(batch_x)
+        with tf.GradientTape() as tape:
+            logits = model(batch_x, is_testing=False)
+            loss = model.loss(logits, batch_y)
+        grads = tape.gradient(loss, model.trainable_variables)
+        optimizer.apply_gradients(zip(grads, model.trainable_variables))
+        model.loss_list.append(loss.numpy())
 
 
 def test(model, test_inputs, test_labels):
@@ -45,8 +58,16 @@ def test(model, test_inputs, test_labels):
     all batches
         test preds - all of the model's predictions for each of the test inputs
     """
-    # TODO: Implement the testing loop
-    raise NotImplementedError
+    n = test_inputs.shape[0]
+    num_batches = math.ceil(n / model.batch_size)
+    accuracies = []
+    predicates = []
+    for i in range(num_batches):
+        batch_x, batch_y = get_next_batch(i, test_inputs, test_labels, model.batch_size)
+        logits = model(batch_x, is_testing=True)
+        accuracies.append(model.accuracy(logits, batch_y))
+        predicates.append(tf.argmax(logits, axis=1))
+    return tf.reduce_mean(accs), tf.concat(all_preds, axis=0)
 
 def visualize_loss(losses):
     """
@@ -133,28 +154,34 @@ def main():
     AUTOGRADER_TRAIN_FILE = '../data/train'
     AUTOGRADER_TEST_FILE = '../data/test'
 
-    LOCAL_TRAIN_FILE = ...
-    LOCAL_TEST_FILE = ...
+    LOCAL_TRAIN_FILE = '../data/train'
+    LOCAL_TEST_FILE = '../data/test'
 
     classes = [3,4,5] # classes for cat, deer, & dog
 
-    # TODO: assignment.main() pt 1
     # Load your testing and training data using the get_data function
+    train_inputs, train_labels = get_data(LOCAL_TRAIN_FILE, classes)
+    test_inputs, test_labels = get_data(LOCAL_TEST_FILE, classes)
 
-    # TODO: assignment.main() pt 2
+
     # Initialize your model and optimizer
+    model = MLP(classes)
+    optimizer = tf.keras.optimizers.Adam(learning_rate=1e-3)
 
-    # TODO: assignment.main() pt 3
     # Train your model
+    epochs = 20
+    for epoch in range(epochs):
+        train(model, optimizer, train_inputs, train_labels)
 
-    # TODO: assignment.main() pt 4
     # Test your model
+    test_acc, test_preds = test(model, test_inputs, test_labels)
+    print("Test accuracy:", test_acc.numpy())
 
-    # TODO: assignment.main() pt 5
     # Save your predictions as either "predictions_cnn.npy" or "predictions_mlp.npy"
     #   depending on which model you are using
     # You will submit these prediction files to the autograder with predictions
     #    For the CAT, DEER, and DOG classes
+    np.save("predictions_mlp.npy", test_preds.numpy())
     return
 
 
